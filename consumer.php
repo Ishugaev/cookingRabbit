@@ -9,10 +9,16 @@ $connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
 $channel = $connection->channel();
 $channel->queue_declare('RabbitQueue', false, false, false, false);
 
-$message = new AMQPMessage('Hello Rabbit!');
-$channel->basic_publish($message, '', 'RabbitQueue');
+echo " [x] Waiting for Greetings!'\n";
 
-echo " [x] Sent 'Hello Rabbit!'\n";
+$callback = function (AMQPMessage $msg) {
+    echo " [x] Received ", $msg->body, "\n";
+};
 
-$channel->close();
-$connection->close();
+$channel->basic_consume('RabbitQueue', '', false, true, false, false, $callback);
+
+while (count($channel->callbacks)) {
+    $channel->wait();
+}
+
+
